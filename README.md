@@ -1,12 +1,16 @@
 # newCloud
 
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="newCloud — a self-hosted file service: a file browser and a hash-linked audit chain, in one Go binary and one PostgreSQL database.">
+</p>
+
 **A self-hosted file service for teams that need SSO, WebDAV, sharing, and an audit trail — without the PHP stack.**
 
-One Go binary. One PostgreSQL database. One process.
-
-[![CI](https://github.com/EdisonJwa/newCloud/actions/workflows/ci.yml/badge.svg)](https://github.com/EdisonJwa/newCloud/actions/workflows/ci.yml)
-[![Go 1.26+](https://img.shields.io/badge/Go-1.26%2B-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+<p align="center">
+  <a href="https://github.com/EdisonJwa/newCloud/actions/workflows/ci.yml"><img src="https://github.com/EdisonJwa/newCloud/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.26%2B-00ADD8?logo=go&amp;logoColor=white" alt="Go 1.26+"></a>
+  <a href="https://www.postgresql.org"><img src="https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&amp;logoColor=white" alt="PostgreSQL 17"></a>
+</p>
 
 newCloud is a small, opinionated replacement for the file-sharing core of Nextcloud: a
 namespace per account, a WebDAV endpoint that desktop clients can rely on, link and email
@@ -23,12 +27,13 @@ who did what.**
 - **OIDC is the front door.** Pocket ID and any compliant OpenID Connect provider work. Roles come
   from IdP groups. WebDAV and scripts use scoped App Passwords, never browser cookies.
 - **WebDAV that behaves like a filesystem.** RFC 4918 class 1 in practice, with a class-2 lock
-  register: `Lock`/`Unlock` are implemented and every write path consults them, but `Lock` is
-  exclusive-only, `supportedlock`/`lockdiscovery` are still to come, and `COPY`/`MOVE`/`DELETE` do
-  not yet fence correctly against a concurrent lock holder. Conditional writes are decided before
-  any byte is written and re-checked inside the statement that changes the row; Range requests,
-  recursive COPY and `Depth` semantics are implemented. See
-  [limitations](docs/guides/limitations.md) for the current lock and `REPORT` gaps.
+  register: `LOCK`/`UNLOCK` are implemented and every write path consults them. Locks are
+  exclusive-only (a shared-lock request is refused with `403` and a `supportedlock` body), and
+  `PROPFIND` reports `supportedlock`/`lockdiscovery` for the locks actually held. `COPY`, `MOVE`
+  and `DELETE` honour collection locks, and a holder proceeds by submitting its token. Conditional
+  writes are decided before any byte is written and re-checked inside the statement that changes
+  the row; Range requests, recursive COPY and `Depth` semantics are implemented. See
+  [limitations](docs/guides/limitations.md) for the remaining shared-lock and `REPORT` gaps.
 - **Sharing with an exit.** Password-protected links, expiry, download caps, email shares with a
   single-use code, and drop-box links that accept uploads into a chosen folder.
 - **An audit log that verifies offline.** Events are hash-chained. `newcloud audit verify` detects
@@ -46,34 +51,21 @@ who did what.**
 | --- | --- |
 | **Authentication** | OIDC authorization code flow with PKCE, `state`, and `nonce`; group-to-role mapping; JIT provisioning (`open`, `pending`, `deny`) with a domain allowlist; break-glass local admin restricted by CIDR, with alerts on use |
 | **Accounts and quotas** | Per-account namespace, per-account quota, admin user management, account disable/delete with an auditable tombstone |
-| **Files** | Web UI with list and grid views, search, drag-and-drop upload, resumable chunked uploads, rename, bulk delete, trash, and version history |
-| **WebDAV** | `PROPFIND`, `PROPPATCH`, `PUT`, `DELETE`, `MKCOL`, `COPY`, `MOVE`, `LOCK`, `UNLOCK`, Range, ETags, conditional writes evaluated before the write, and lock checks shared with the JSON API (exclusive locks; `copy`/`move` fencing is still open); the official Nextcloud desktop and mobile clients connect and sync through `status.php`, OCS capabilities/user, login flow v2, and the `/remote.php/dav/files/<user>/` path shape |
-| **Sharing** | Link shares with password, expiry, and download limits; email shares with one-time recipient codes; drop-box links; stable links across rename and move |
+| **Files** | Web UI with list and grid views; name/filter search with an optional full-text index; favorites, tags and comments; drag-and-drop and tus resumable uploads; rename, bulk delete, empty trash, and version history |
+| **WebDAV** | `PROPFIND`, `PROPPATCH`, `PUT`, `DELETE`, `MKCOL`, `COPY`, `MOVE`, `LOCK`, `UNLOCK`, Range, ETags, conditional writes evaluated before the write, collection ETags that change on child mutation, and lock checks shared with the JSON API (exclusive locks, `supportedlock`/`lockdiscovery` reported; shared locks remain open); the official Nextcloud desktop and mobile clients connect and sync through `status.php`, OCS capabilities/user, login flow v2, and the `/remote.php/dav/files/<user>/` path shape |
+| **Sharing** | Link shares with password, expiry, and download limits; email shares with one-time recipient codes; drop-box links; stable links across rename and move; runtime sharing posture (maximum/default expiry, require a password) |
+| **Notifications and antivirus** | In-app notification inbox with queued email for share grants, expiring links and quota warnings; optional ClamAV scanning that quarantines a detection to the owner's trash, notifies and audits, never deletes silently |
 | **Previews** | Images, video, audio, PDF, text, and source code in the browser; a type allowlist plus content sniffing; SVG and HTML are never rendered inline; server-side thumbnails with pixel, concurrency, and decode-time limits |
 | **Audit** | Hash-chained event log, external daily anchors, `audit verify`, CSV/JSON export, INSERT-only database role, fail-closed policy |
 | **Storage** | Content-addressed `blob` layout with deduplication or filesystem-mirroring `tree` layout; local disk or S3-compatible object storage; orphan GC, version retention, and periodic integrity scrubbing |
 | **External mounts** | WebDAV, FTP and SFTP remotes mounted as top-level folders and browsed in place — no copy, no sync ([ADR-0014](docs/adr/0014-external-mounts.md)); ordinary ACL grants on the mount point govern who sees them |
-| **Operations** | Single static binary, `/healthz`, `/readyz`, `/metrics`, 20 Prometheus alert rules, a complete runbook, backup scripts, an automated restore drill, and a `newcloud drill` subcommand |
+| **Operations** | Single static binary, `/healthz`, `/readyz`, `/metrics`, 23 Prometheus alert rules, a complete runbook, backup scripts, an automated restore drill, and a `newcloud drill` subcommand |
 
 ## Architecture
 
-```text
-                    ┌─────────────────────────────────────────┐
-   browser ────────▶│  newcloud (single Go process)           │
-   WebDAV client ──▶│                                         │
-   share visitor ──▶│  JSON API  ·  web UI  ·  WebDAV         │
-                    │  public share pages  ·  OIDC callback   │
-                    │                                         │
-                    │  authz  ──▶  store  ──▶  audit          │
-                    │                 │                       │
-                    │                 └──▶ worker (GC, scrub) │
-                    └────────┬────────────────────┬───────────┘
-                             │                    │
-                    ┌────────▼────────┐  ┌────────▼─────────────┐
-                    │ PostgreSQL 17   │  │ blob/tree storage    │
-                    │ metadata, audit │  │ local disk or S3     │
-                    └─────────────────┘  └──────────────────────┘
-```
+<p align="center">
+  <img src="./assets/readme/architecture.svg" width="100%" alt="newCloud architecture: browsers, WebDAV clients and share visitors reach one Go process exposing the JSON API, web UI, WebDAV, share pages and OIDC callback; requests pass through authz, store and audit, with a background worker for GC and scrubbing; metadata lives in PostgreSQL 17 and file bytes in blob or tree storage on local disk or S3.">
+</p>
 
 The metadata tree, versions, quota accounting, shares, locks, sessions, jobs, and the audit chain
 all live in PostgreSQL. File bytes live in the content store. That split is what makes `blob`
@@ -188,7 +180,10 @@ Design decisions are recorded as ADRs in [docs/adr/](docs/adr/):
 - [ADR-0008: Resumable chunked uploads](docs/adr/0008-resumable-uploads.md)
 - [ADR-0012: Cursor pagination contract](docs/adr/0012-cursor-contract.md)
 - [ADR-0013: File-operation consistency](docs/adr/0013-file-operation-consistency.md) (Accepted)
+- [ADR-0014: External mounts](docs/adr/0014-external-mounts.md) (Accepted)
 - [ADR-0015: Nextcloud client compatibility](docs/adr/0015-nextcloud-client-compatibility.md)
+- [ADR-0016: tus upload protocol](docs/adr/0016-tus-upload-protocol.md) (Accepted)
+- [ADR-0017: Search-engine posture](docs/adr/0017-search-engine-posture.md) (Accepted)
 
 The evidence behind the claims in this README — the tests, the manual verification, and the
 remaining gaps — is in [docs/reference/implementation-record.md](docs/reference/implementation-record.md).
@@ -204,7 +199,7 @@ attacker a directory-enumeration oracle for free.
 paths. WebDAV never accepts a session cookie, because desktop clients cannot complete an OIDC
 redirect. Browser sessions and short-lived share/email tickets are HMAC-signed; App Passwords and
 share links are random values stored only as SHA-256 hashes. Only human-chosen secrets (share
-passwords, the break-glass password) use Argon2id.
+passwords, the break-glass password) use argon2id.
 
 **A write and its audit record share one transaction.** Audit writes fail closed: if the event
 cannot be recorded, the operation is refused rather than performed invisibly.
@@ -252,8 +247,10 @@ go run ./tools/uicheck -app http://127.0.0.1:18500 -public-host 127.0.0.1:18600
 The core file-service contracts are implemented and covered by tests. This is not a claim that
 every feature in the requirements document exists. Notable gaps:
 
-- **No shared or group-owned spaces.** Resource ACLs grant users and groups access to a folder;
-  team ownership of a space is not implemented.
+- **Group spaces exist, but no team-owned space does.** `POST /api/spaces` creates a group space and
+  `GET /api/spaces` lists the caller's; the root lives under the creator's account, so deleting that
+  account deletes the space. A group-owned root with its own quota and lifecycle, and a web UI for
+  spaces, are not implemented. Resource ACLs also grant users and groups access to any folder.
 - **`REPORT` and `sync-collection` are not implemented.** Clients receive an explicit `501`, not
   an empty result. Shared locks are absent too, and a `LOCK` asking for one is refused with `403`
   plus a `supportedlock` body rather than silently downgraded to exclusive.
