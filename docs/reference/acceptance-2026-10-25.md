@@ -7,6 +7,12 @@ trusting prose. Anything not verified is listed as such at the end.
 The review that drove the work is [review-2026-10-24.md](review-2026-10-24.md); its defect register is
 the source of truth for "fixed", and this record is the source of truth for "verified".
 
+> **Later work (2026-10-25 → 2026-10-28).** This is a dated snapshot. External mounts, tus, content
+> search, social metadata, notifications, antivirus, runtime sharing posture and the env-only
+> Compose stack landed after it; [implementation-record.md](implementation-record.md) round 49 and
+> [limitations.md](../guides/limitations.md) record them. The blocked items below (LDAP/AD, Helm,
+> OpenAPI regeneration) are still open.
+
 ## Verified
 
 | Check | Command | Result |
@@ -41,7 +47,7 @@ are not rediscovered as surprises.
 | Item | Why it cannot be finished here |
 | --- | --- |
 | LDAP / AD login | needs a dependency that cannot be fetched in this environment; writing an untested integration would be worse than documenting the gap |
-| OpenAPI drift (M7) | `web/openapi.yaml` is being rewritten by the UI session; editing it here would collide |
+| OpenAPI drift (M7) | **Resolved after this record.** `web/openapi.yaml` now parses, and regenerating `web/src/api-types.ts` matches the committed file (checked 2026-10-28). The row is kept as the reason it was not edited in this session. |
 | Helm chart | no `helm` binary to validate templates with; a chart that has never been templated is not a deliverable |
 
 ## What is not verified

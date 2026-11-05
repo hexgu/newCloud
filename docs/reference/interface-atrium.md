@@ -1,6 +1,6 @@
 # Interface redesign: Atrium
 
-**Status:** Selected and implemented · **Supersedes:** [Interface design direction](interface-design.md), which is retained as history
+**Status:** Historical · **Supersedes:** [Interface design direction](interface-design.md), which is retained as history · **Superseded by:** [Cirrus 9.1 UI](cirrus-9.1-ui-implementation.md)
 
 **Scope:** `web/` (React + TypeScript + Vite) and `internal/webassets`
 
@@ -232,7 +232,8 @@ The "Continue" region on the home page needs recently modified files across the 
 
 ### Still not done
 
-- Cross-directory full-text search (no backend index; the command palette searches only recent files, and the documentation states that scope).
+- Cross-directory full-text search (this round's command palette searched only recent files; an
+  optional Elasticsearch content index exists now — see ADR-0017).
 - Offline write queue (needs a local persistence layer).
 - Cross-object sharing (the backend models shares per single object).
 - `ja` / `ar` / `he` language packs (`dir` and logical properties are ready; translations are missing).

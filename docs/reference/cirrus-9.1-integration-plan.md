@@ -1,6 +1,15 @@
 # Cirrus 9.1 → newCloud production integration plan
 
-**Status:** Ready for Phase 0 decision gates · **Audited:** 2026-10-23 · **Baseline:** [`cirrus-9.1-r1`](../../design-studio/round-9.1-cirrus-ux/FREEZE.md)
+**Status:** Historical plan, partially delivered · **Audited:** 2026-10-23 · **Baseline:** [`cirrus-9.1-r1`](../../design-studio/round-9.1-cirrus-ux/FREEZE.md)
+
+> **Status update (2026-10-25 → 2026-10-28).** The shell, router, Home, Files, Sharing, Viewer,
+> Inspector, Settings and public page described here are implemented on the vendored Serein UI;
+> [the implementation record](cirrus-9.1-ui-implementation.md) says what was built and where the
+> server contract forced a difference. The gap matrix in §4 and the phase plan in §9 are the
+> pre-implementation audit, not a current gap list: several rows marked `MISSING` (favorites, tags,
+> comments, notifications, content search, tus) have since shipped. The server-side items this plan
+> names and that remain absent are collected in the implementation record's "What is not claimed"
+> section and in [limitations.md](../guides/limitations.md).
 
 **Audited tree:** `C:\Users\admin\Documents\edison-webcloud` at `6ed3f92b1634` plus the working-tree changes present on 2026-10-23 (the tree is not clean; the audit describes the working tree, including `web/openapi.yaml` and `web/src`).
 **Audited surfaces:** `web/` (React 19 + TypeScript + Vite), `internal/server`, `internal/store`, `internal/authz`, `internal/share`, `internal/upload`, `internal/dav`, `migrations/`, `web/openapi.yaml`.

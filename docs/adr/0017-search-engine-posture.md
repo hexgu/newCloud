@@ -1,6 +1,6 @@
 # ADR-0017: search-engine posture and trust boundary
 
-**Status:** Proposed · **Date:** 2026-10-25 · **Amends:** `competitiveness-analysis-2026-10-25.md`
+**Status:** Accepted · **Date:** 2026-10-25 · **Implemented:** 2026-10-25 (`search.engine: elasticsearch`, migration 0024) · **Amends:** `competitiveness-analysis-2026-10-25.md`
 §6 M6.2 · **Implements:** `core-scope-2026-10-25.md` §7.2
 
 > **Numbering note.** `core-scope-2026-10-25.md` asks for this decision to be filed as ADR-0016. That

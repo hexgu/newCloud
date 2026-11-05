@@ -1,6 +1,6 @@
 # Interface design direction
 
-**Status:** Selected and implemented · **Superseded by:** [Interface redesign: Atrium](interface-atrium.md)
+**Status:** Historical · **Superseded by:** [Interface redesign: Atrium](interface-atrium.md), itself superseded by [Cirrus 9.1 UI](cirrus-9.1-ui-implementation.md)
 
 > **Implementation note.** This document records the Atlas direction and the prototype that
 > preceded the current client. The shipped client is React 19 + TypeScript + Vite, built into
@@ -443,7 +443,8 @@ Semantic classes brought a side benefit: styles live in the stylesheet, so RTL a
 
 Not implemented, each corresponding to a backend capability outside the scope of this design:
 
-- Cross-directory full-text search (the backend has no index).
+- Cross-directory full-text search (the backend had no index when this design was written; an
+  optional Elasticsearch content index exists now — see ADR-0017).
 - An offline write queue (needs a local persistence layer).
 - Multi-object sharing across a selection (the backend models shares per single object).
 - `ja` / `ar` / `he` language packs (`dir` and logical properties are ready; translations are missing).

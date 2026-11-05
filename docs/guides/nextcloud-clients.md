@@ -53,7 +53,7 @@ capabilities document and uses its fallback, rather than failing halfway through
 | --- | --- |
 | Nextcloud chunked uploads (v1 and v2) | Large files are uploaded in one request. The ceiling is `limits.max_file_bytes` (1 TiB by default), so it is not the limit that matters in practice — losing the connection at 90% is, because the file starts again. |
 | `REPORT sync-collection` | Incremental sync is not available. Clients do a full PROPFIND walk, which is correct but slower on a very large tree. Favorites lists (which use `REPORT`) are not served. |
-| `OC-Checksum` | Checksums are not stored or verified by the server; clients do not send them because the capability is absent. |
+| `OC-Checksum` | The server **emits** `OC-Checksum` and the `oc:checksums` property for stored files, and verifies a client-supplied `X-OC-Checksum` when one is sent (core-scope §2). The capabilities document does not advertise the feature, so a client that gates on it may not send a checksum at all. |
 | `oc:permissions` | Not reported. The desktop client treats a missing permission set as "no restriction", so a read-only share is enforced on the write path rather than in the client's UI. |
 | Nextcloud sharing APIs | The client's sharing tab will not manage shares; use the newCloud web UI. Links created there are ordinary share URLs and open in a browser. |
 | `/public.php/dav` | Public links are served by this product's share pages, not by Nextcloud's public DAV endpoint. |

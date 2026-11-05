@@ -1,6 +1,6 @@
 # ADR-0016: tus as the resumable upload protocol
 
-**Status:** Proposed · **Date:** 2026-10-25 · **Supersedes:** ADR-0008's wire protocol (its durability
+**Status:** Accepted · **Date:** 2026-10-25 · **Implemented:** 2026-10-25 (`/api/files/tus`, tus 1.0.0 with creation, defer-length, termination, checksum and concatenation) · **Supersedes:** ADR-0008's wire protocol (its durability
 machinery is kept) · **Amends:** `core-scope-2026-10-25.md` §1
 
 > **Numbering note.** `core-scope-2026-10-25.md` asks for this decision to be filed as ADR-0015. That

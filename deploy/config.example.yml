@@ -196,7 +196,7 @@ limits:
   # which is generous for a human and far below what a script needs.
   comment_rate_per_hour: 60
 
-# Content search (core-scope §7.2, ADR-0016). DISABLED by default, and that is a decision
+# Content search (core-scope §7.2, ADR-0017). DISABLED by default, and that is a decision
 # rather than an omission: a deployment without an engine still has name-and-filter search,
 # and a content query answers `mode: name` with `degraded: true` rather than returning a
 # confident empty result. The single binary stays the default; this is what a deployment adds

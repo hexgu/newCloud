@@ -150,6 +150,9 @@ a slowdown. Startup performs a real rename probe and refuses to start if it fail
 | `max_retained_version_bytes` | `0` | Retained version history per account. `0` is unlimited. Enforced by a sweep, not on the write path. |
 | `thumbnail_isolation` | `process` | `process` decodes images in a child process that the deadline can kill; `inline` decodes in the server process, where a goroutine cannot be cancelled. |
 | `comment_rate_per_hour` | `60` | Comments one account may post in a rolling hour. `0` disables the limit. A rate rather than a total because the failure is a burst. |
+| `share_max_expiry_seconds` | `0` | Cap on how long any share may live. `0` means no cap. Enforced on create and update. |
+| `share_default_expiry_seconds` | `0` | Expiry applied when a share is created without one. `0` leaves it open. |
+| `share_require_password` | `0` | `1` requires a password on link and email shares. Drop boxes are exempt. |
 
 Retention is the one place where the safe default is "keep everything". A deployment that has not
 decided a policy must not silently delete recoverable data. When both retention values are `0`,
@@ -181,11 +184,51 @@ The index is a cache, never a source of truth: no write fails because the engine
 is filtered by live grants, and every result is re-checked before it is returned. Deleting the index
 is safe and the backfill rebuilds it.
 
+## `notify`
+
+The in-app inbox needs no configuration. These keys govern the emitters and the retention window;
+`0` disables each policy rather than making it unbounded.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `quota_warning_percent` | `90` | Warn an owner whose storage crosses this percentage of their quota. `0` disables the warning. |
+| `share_expiry_days` | `3` | Remind a share owner this many days before a link expires. `0` disables the reminder. |
+| `retention_days` | `90` | Prune notifications older than this window, read or not. `0` keeps them forever. |
+
+## `antivirus`
+
+Asynchronous scanning through a ClamAV `clamd` daemon. Disabled by default: enabling it is the
+decision to run a second service beside the binary. A detection quarantines — the file moves to the
+owner's trash, the owner is notified and the action is audited — never a silent deletion.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `false` | Turn on the `av.scan` job. |
+| `host` | `127.0.0.1:3310` | `clamd` TCP address; the loopback default is where a beside-the-binary daemon listens. |
+| `timeout_seconds` | `30` | Bounds one scan session in both directions. |
+| `max_scan_bytes` | `104857600` (100 MiB) | A larger file is not scanned; the job logs that rather than hanging. |
+
+## `mounts`
+
+External storage mounts (ADR-0014): WebDAV, FTP and SFTP remotes appear as top-level folders and are
+browsed and edited in place, never copied. Disabled by default.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `false` | Turn on `/api/mounts` and resolution below a mount point. Disabled, existing mounts resolve as empty folders and the routes answer `503`. |
+| `secret_file` | required when enabled | Hex-encoded 32-byte key encrypting mount credentials at rest (AES-256-GCM). Generate with `openssl rand -hex 32`. |
+| `allow_user_mounts` | `false` | Let any signed-in user create mounts in their own tree. Off by default: mount creation points the server at a host of the creator's choosing. |
+| `deny_private_addresses` | `true` | Refuse user-created mounts whose endpoint resolves to loopback, link-local or private space (the SSRF guard). Administrator-created mounts are exempt. |
+| `timeout_seconds` | `30` | Bounds every dial and per-operation round trip; must be 5–300. |
+| `max_list_entries` | `5000` | One remote listing is fetched whole; refuse above this rather than truncate silently. |
+| `max_file_bytes` | `0` | Cap for one write into a mount. `0` means use `limits.max_file_bytes`. |
+| `allowed_schemes` | `webdav`, `ftp`, `sftp` | Dial allowlist. SMB has no compiled provider and is refused at creation. |
+
 ## `audit`
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `retention_days` | `365` | **Not applied today.** Intended as how long audit events are kept; the audit table is append-only and nothing prunes it, so it grows without bound. Setting this changes nothing. See [Limitations](limitations.md). |
+| `retention_days` | `365` | Default cutoff for `newcloud audit prune`. The server does not schedule pruning; run the command from cron or a systemd timer. |
 | `anchor_dir` | empty | Directory for daily chain-head checkpoints. Empty disables anchoring and logs a warning. |
 | `anchor_signing_key_file` | empty | Ed25519 key used to sign checkpoints. Empty stores them unsigned, which still detects truncation but not a rewritten anchor. Generate with `newcloud audit anchor-keygen`. |
 | `archive_dir` | `audit-archive` | Where `newcloud audit prune` writes the events it removes, and the path recorded in the prune mark. |
@@ -197,7 +240,9 @@ rewrite the database can rewrite the anchor too.
 
 ## `mail`
 
-Mail is required for email shares. Link shares and drop-box links work without it.
+Mail is required for email shares and for the outbound half of the notification system (share
+grant, link-expiry and quota-warning mail). Link shares and drop-box links work without it; without
+SMTP the notification stays in the in-app inbox and the `mail.send` job records the failure.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -231,7 +276,12 @@ The process exits with an invalid-configuration error when:
 - `storage.backend` is not `local` or `s3`;
 - `storage.layout` is `tree` with `backend: s3`;
 - an S3 bucket or endpoint is missing, or only one of the access key and secret is set;
-- mail is enabled without a host or sender, or both TLS modes are selected.
+- mail is enabled without a host or sender, or both TLS modes are selected;
+- `notify.quota_warning_percent` is outside 0–100, or either notify window is negative;
+- `antivirus.timeout_seconds` or `antivirus.max_scan_bytes` is negative;
+- `mounts.enabled` is true without `secret_file`, with a timeout outside 5–300, with a non-positive
+  `max_list_entries`, a negative `max_file_bytes`, or an empty `allowed_schemes`;
+- `search.engine` is `elasticsearch` without `elasticsearch.urls`.
 
 ## Example
 

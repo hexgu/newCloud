@@ -12,9 +12,29 @@ Legend: ✅ implemented · ◐ partial/limited · ✗ absent · 🔒 deliberate 
 
 ---
 
-## 1. TL;DR — what is still missing
+## Status update (2026-10-28)
 
-Ranked by how much it costs us against *all three* competitors:
+The comparison below is a snapshot taken at `d219e52` (2026-10-25). Work landed after it, so the
+TL;DR has to be read with these corrections; the function-level matrix and priority list are left as
+the dated snapshot they are.
+
+| 2026-10-25 claim | Current state |
+| --- | --- |
+| "No sync client story … no capabilities/OCS endpoints" | The official Nextcloud desktop and mobile clients now connect and sync through `status.php`, OCS capabilities/user and login flow v2. Delta sync is still absent: `REPORT`/`sync-collection` answers `501`. |
+| "No team-owned spaces" | Still true. `POST/GET /api/spaces` create and list creator-bound group spaces; there is no team-owned root, enforced per-space quota, or web UI. |
+| "Collaboration metadata: zero" | **No longer true.** Favorites, tags, comments, an in-app notification inbox and an activity view shipped; outbound mail now covers grants, expiry reminders and quota warnings. |
+| "Search is filename-substring only" | **No longer true.** Name search has filters, sort and cursor pagination; an optional Elasticsearch engine does content search, and degrades honestly without one. |
+| "External mounts are dead code" | **No longer true.** `/api/mounts` is routed and WebDAV, FTP and SFTP remotes are browsed in place. SMB still has no provider, and previews/search/zip are not available below a mount. |
+| "No antivirus scanning" | **No longer true.** Optional ClamAV `av.scan` quarantines a detection to the owner's trash, notifies and audits. |
+| "No share/link policy administration at runtime" | **No longer true.** Runtime settings cap/default share expiry and can require a password. |
+| "No import/migration path" | Still true. Export exists; there is no import and no `blob`↔`tree` migration tool. |
+
+---
+
+## 1. TL;DR — what was still missing at 2026-10-25
+
+Read with the status update above: collaboration metadata, search, mounts, antivirus and share policy
+have since shipped. Ranked by how much it cost us against *all three* competitors at that date:
 
 1. **No sync client story.** No desktop/mobile client, no sync protocol (`REPORT`/`sync-collection`
    answered 501), no `capabilities`/OCS compatibility endpoints. Every competitor ships a client.
@@ -44,7 +64,7 @@ Ranked by how much it costs us against *all three* competitors:
     only, no theming/branding, 2 UI languages, no guest accounts, no federation.
 
 Where we are **ahead** of all three: a tamper-evident, hash-chained audit log with signed external
-anchors and offline verification; fail-closed auditing; OOTB Prometheus metrics + 21 alert rules +
+anchors and offline verification; fail-closed auditing; OOTB Prometheus metrics + 23 alert rules +
 runbook + an automated restore drill; a single static Go binary; two contract-tested storage
 layouts; and unusually hardened share links (Argon2id passwords, per-link throttles, one-time
 mailbox-verification codes, uniform-404 token-oracle resistance, download caps charged per session).
@@ -59,24 +79,24 @@ mailbox-verification codes, uniform-404 token-oracle resistance, download caps c
 | --- | --- | --- | --- | --- |
 | Browse / list / grid / column views | ✅ | ✅ | ✅ | ✅ |
 | Upload (single + multipart) | ✅ | ✅ | ✅ | ✅ |
-| Resumable chunked upload, durable across restart | ✅ own protocol (parallel, out-of-order, durable range set) | ✅ chunking-v2 | ✅ tus | ✅ own protocol |
+| Resumable chunked upload, durable across restart | ✅ tus 1.0.0 (parallel/out-of-order, durable range set); bespoke protocol deprecated | ✅ chunking-v2 | ✅ tus | ✅ own protocol |
 | Parallel/out-of-order chunks | ✅ (browser sends up to 3 at once; server reserves ranges) | ✅ | ✅ | ✅ |
 | Download w/ Range, resume, conditional GET | ✅ | ✅ | ✅ | ✅ |
 | Streaming ZIP of folder / multi-select | ✅ | ◐ (zip via client or apps) | ✅ | ✅ |
 | Rename / move / copy incl. batch | ✅ (≤200, all-or-nothing subtree proof) | ✅ | ✅ | ✅ |
 | Conflict handling (ETag preconditions in-write) | ✅ (conditional inside the SQL statement) | ◐ (etag checks) | ◐ | ◐ |
 | File locking | ◐ exclusive WebDAV locks only, enforced on every write path; no shared locks | ✅ (web + office locks) | ✅ (web + office locks) | ✅ (server-side + office auto-lock) |
-| Checksums exposed to client | ◐ per-version sha256 in JSON only; no `oc:checksums` / `X-OC-Checksum` | ✅ | ✅ | ✅ (fixed blocks) |
+| Checksums exposed to client | ✅ sha256 in JSON, `OC-Checksum`/`oc:checksums`, verify-on-upload via `X-OC-Checksum` | ✅ | ✅ | ✅ (fixed blocks) |
 | Versioning | ✅ count+age+byte caps; **tree layout retains no addressable old bytes** (restore 409) | ✅ configurable expiry | ✅ (default 30) | ✅ per-file history, snapshots |
 | Trash + restore | ✅ per-user, retention, trash *capacity* cap (507) — unique | ✅ retention | ✅ per-space | ✅ per-library |
-| User-initiated "empty trash" | ✗ (purge only via worker) | ✅ | ✅ | ✅ |
+| User-initiated "empty trash" | ✅ API and web button | ✅ | ✅ | ✅ |
 | Per-user quota | ✅ enforced at upload | ✅ | ✅ | ✅ |
-| Favorites / starred | ✗ | ✅ | ✅ | ✅ (starred files) |
-| Tags / labels | ✗ | ✅ (system + free, automation input) | ✅ (tag manager, filter) | ✗ |
-| Comments / discussions | ✗ | ✅ | ✗ | ✅ (file discussions) |
-| Search | ◐ filename substring, no filters, no pagination | ✅ name + full-text (ES) + filters | ◐ name + tag/type filter, no content index | ◐ CE name-only; ✅ Pro full-text |
-| Activity stream / recent changes | ◐ audit-log view only | ✅ activity app | ◐ (versions + notifications) | ◐ recent changes per library |
-| In-app notifications (bell/push) | ✗ | ✅ (+ push app, emails) | ✅ | ✅ + emails |
+| Favorites / starred | ✅ API, row action, filter | ✅ | ✅ | ✅ (starred files) |
+| Tags / labels | ✅ personal + system tags, row chips, filter (rename is API-only) | ✅ (system + free, automation input) | ✅ (tag manager, filter) | ✗ |
+| Comments / discussions | ✅ inspector thread, moderation audited (no edit history) | ✅ | ✗ | ✅ (file discussions) |
+| Search | ✅ name + filters + sort + cursor; optional Elasticsearch content search | ✅ name + full-text (ES) + filters | ◐ name + tag/type filter, no content index | ◐ CE name-only; ✅ Pro full-text |
+| Activity stream / recent changes | ◐ audit feed + recent view | ✅ activity app | ◐ (versions + notifications) | ◐ recent changes per library |
+| In-app notifications (bell/push) | ◐ API-only inbox + queued email; no browser bell or push | ✅ (+ push app, emails) | ✅ | ✅ + emails |
 | Photo albums / memories / media apps | ✗ | ✅ | ◐ | ◐ (gallery-ish) |
 
 ### 2.2 Clients and protocols
@@ -86,14 +106,14 @@ mailbox-verification codes, uniform-404 token-oracle resistance, download caps c
 | WebDAV server | ✅ RFC 4918 c1+c2 at `/dav` (Basic + app password) | ✅ (Sabre) | ✅ (reva) | ✅ (seafdav) |
 | `Depth: infinity` PROPFIND | ✗ refused (DoS posture) | ✅ (configurable) | ✅ | ✅ |
 | WebDAV sync-collection / RFC 6578 (`getctag`, `sync-token`) | ✗ 501 | ✅ | ✅ (ctag) | n/a (own protocol) |
-| Desktop sync client | ✗ (generic WebDAV mount / rclone only) | ✅ virtual files, selective sync | ✅ (spaces as drives) | ✅ + "Drive" cloud-drive client |
+| Desktop sync client | ◐ official Nextcloud desktop client signs in and syncs (single-request uploads, PROPFIND walk); no delta sync, selective sync or virtual files | ✅ virtual files, selective sync | ✅ (spaces as drives) | ✅ + "Drive" cloud-drive client |
 | Delta / block-level sync | ✗ | ◐ file-level (etag+chunks) | ◐ file-level | ✅ content-defined chunking — its signature feature |
-| Mobile apps | ✗ (mobile web) | ✅ | ✅ | ✅ |
-| Capabilities discovery (`/capabilities`, `status.php`) | ✗ | ✅ | ✅ | ✅ |
-| OCS API (share/provision/etc.) | ✗ 🔒 (ADR-0001 reserves a `compat` seam, unmounted) | ✅ | ◐ compat layer | ✗ (own web API) |
+| Mobile apps | ◐ official Nextcloud mobile client connects; no native newCloud app | ✅ | ✅ | ✅ |
+| Capabilities discovery (`/capabilities`, `status.php`) | ✅ status.php + OCS capabilities/user | ✅ | ✅ | ✅ |
+| OCS API (share/provision/etc.) | ◐ capability/user/login-flow subset; no sharing or provisioning API | ✅ | ◐ compat layer | ✗ (own web API) |
 | Public REST API + spec | ✅ OpenAPI 3.1, 40 paths | ✅ | ✅ (CS3/Graph) | ✅ |
 | Webhooks / outbound events | ✗ | ◐ (apps) | ✗ | ✗ |
-| Upload protocol standard (tus) | ◐ own protocol today; **tus adopted as core scope 2026-10-25** (`core-scope-2026-10-25.md`) | ✗ (own) | ✅ | ✗ (own) |
+| Upload protocol standard (tus) | ✅ tus 1.0.0 at `/api/files/tus`; bespoke protocol deprecated | ✗ (own) | ✅ | ✗ (own) |
 
 ### 2.3 Sharing
 
@@ -112,8 +132,8 @@ mailbox-verification codes, uniform-404 token-oracle resistance, download caps c
 | Recipient *edit* links (edit in browser) | ✗ (perm vocabulary is `read`+`create` only) | ✅ (edit role) | ✅ (editor role) | ◐ (cloud-edit role) |
 | Federated shares (server↔server, `user@server`) | ✗ | ✅ | ✅ (CS3/Sciencemesh) | ✗ |
 | Guest accounts (external users with accounts) | ✗ | ✅ (guests app) | ✅/◐ (verify) | ✗ |
-| Share notifications to recipient/owner | ✗ (no mail templates beyond codes) | ✅ | ✅ | ✅ |
-| Link policy administration (defaults, forced password) | ✗ | ✅ | ✅ (password policy service) | ✅ (config) |
+| Share notifications to recipient/owner | ✅ in-app inbox + queued email (grant, expiry, quota) | ✅ | ✅ | ✅ |
+| Link policy administration (defaults, forced password) | ✅ runtime max/default expiry and require-password | ✅ | ✅ (password policy service) | ✅ (config) |
 | Watermark / secure-view on links | ✗ | ✗ | ✅ (enterprise) | ✗ |
 | "Shared with me" surface | ✅ | ✅ | ✅ (shares jail) | ✅ |
 
@@ -180,7 +200,7 @@ mailbox-verification codes, uniform-404 token-oracle resistance, download caps c
 | Content-origin XSS isolation | ✅ (split origins, capability tickets) | ✗ (same-origin) | ◐ | ✗ |
 | Server-side encryption at rest (app-managed) | ✗ (disk / S3 SSE only) | ✅ module | ✗ (storage-level, same stance as us) | ✗ server-side |
 | Client-side / E2EE option | ✗ 🔒 | ◐ (E2EE module) | ✗ (secure view instead) | ✅ encrypted libraries |
-| Antivirus (ClamAV etc.) | ✗ | ✅ app | ✅ | ✅ Pro |
+| Antivirus (ClamAV etc.) | ✅ optional ClamAV scan, quarantine/notify/audit (off by default) | ✅ app | ✅ | ✅ Pro |
 | Ransomware rollback/protection | ◐ versions+trash only | ✅ | ◐ | ✅ |
 | Retention policies on content | ◐ trash/version retention only | ✅ (workflow retention) | ◐ | ✅/◐ |
 | Legal hold / WORM / eDiscovery | ✗ | ◐ | ✗ | ✗ Pro (audit-grade) |
@@ -196,7 +216,7 @@ mailbox-verification codes, uniform-404 token-oracle resistance, download caps c
 | Content-addressed dedup (whole-file) | ✅ blob layout | ✗ (unless object store) | ✅ (decomposed FS) | ✗ (block-level instead) |
 | Block-level / intra-file dedup + delta | ✗ | ✗ | ✗ | ✅ — signature feature |
 | Filesystem-mirroring layout (`ls`/`rsync`) | ✅ tree layout — unique | ✗ | ✗ | ✗ |
-| External storage mounts (SMB/SFTP/FTP/WebDAV/S3) | ◐ **code exists but unwired** (WebDAV provider only) | ✅ | ✗ | ✗ |
+| External storage mounts (SMB/SFTP/FTP/WebDAV/S3) | ✅ WebDAV, FTP, SFTP served; SMB absent | ✅ | ✗ | ✗ |
 | Integrity scrubbing | ✅ (cursor-swept, corrupt-vs-missing) | ✗ | ◐ | ✅ (seaf-fsck) |
 | Orphan/GC with refcounts | ✅ | n/a | ✅ | n/a (blocks GC) |
 | Version cost model | ✅ blob layout = near-free; tree = full copies, no restore | full copies | decomposed | blocks (cheap) |
@@ -250,9 +270,9 @@ mailbox-verification codes, uniform-404 token-oracle resistance, download caps c
 
 ### 3.2 Table-stakes features every competitor has (scope decisions to revisit)
 
-- Desktop sync client + efficient change detection (sync-collection at minimum; or ship a client).
-- Antivirus scanning hooks.
-- In-app notifications + share emails.
+- Desktop sync client + efficient change detection — partially shipped: the official Nextcloud clients connect, but `REPORT`/sync-collection is still absent.
+- Antivirus scanning hooks — **shipped 2026-10-25** (optional ClamAV).
+- In-app notifications + share emails — **shipped 2026-10-25** (API-only inbox + queued mail).
 - Full-text search (or an explicit partnered answer like oCIS's "no index" stance).
 - Server-rendered previews beyond small raster images.
 - LDAP/SAML as *additional* backends (we are OIDC-only).

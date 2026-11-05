@@ -4,6 +4,11 @@
 **Input:** [`WebCloud_Functional_Requirements_and_Gap_Analysis_v0.2.md`](C:/Users/admin/Downloads/WebCloud_Functional_Requirements_and_Gap_Analysis_v0.2.md)
 **Method:** read the requirements, mapped every P0/P1 ID and every `T-xx` to code and tests, then tried to falsify the project's own gap claims. `go build ./...` and `go test ./...` both pass here (in-memory store; no Docker/PostgreSQL available on this host, so `TEST_DATABASE_URL` suites did not run).
 
+> **Historical snapshot.** This review is tied to `f4815b1` (2026-10-23). Many findings were fixed
+> in the rounds recorded in [implementation-record.md](implementation-record.md), and the current
+> gap list is [limitations.md](../guides/limitations.md). Read this file for the method and the
+> evidence of what was wrong then, not as a current status page.
+
 ## Verdict in one line
 
 The engineering is far ahead of both documents. The real risk now is **not missing features — it is that the gap documentation has drifted out of date and, in one case, an authorization comment claims a check the code does not perform.**

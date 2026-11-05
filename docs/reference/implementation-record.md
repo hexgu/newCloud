@@ -11,6 +11,41 @@ command that can be run by hand, and every unverified property is stated next to
 Newest first. Each round gives the finding that changed the code, the tests that pin it, and a lesson only
 where the lesson keeps the defect from returning. A round that covered two topics has two headings.
 
+### Round 49: Post-acceptance work, 2026-10-25 → 2026-10-28
+
+The acceptance record ended at round 48. The slice from the external-mount/core-scope commits
+(`29a5fc0`) through the deployment commits (`d14ada0`) was not written up as rounds, which is how a
+"what is implemented" document drifts behind the tree. This round records
+their contracts in one place; the boundaries they do not remove stay in [limitations.md](../guides/limitations.md).
+
+- **External mounts served** (ADR-0014): WebDAV, FTP and SFTP providers, `/api/mounts`, and resolution
+  on both the JSON and DAV surfaces. SMB has no compiled provider and is refused at creation.
+  `TestMountsBrowseAndEditTheRemoteInPlace`, `TestMountRefusalsAreTheDocumentedOnes`.
+- **tus 1.0.0** (ADR-0016): creation, creation-with-upload, defer-length, termination, checksum and
+  concatenation; the bespoke `/api/files/uploads` protocol is deprecated with `Deprecation`/`Sunset`.
+  `TestTusSingleUploadRoundTrip`, `TestTusDeferredLength`, `TestTusConcatJoinsPartialUploads`.
+- **Content search** (ADR-0017): an optional Elasticsearch index, with name-and-filter search always
+  present and `mode=content` degrading to `mode: name` plus a reason without an engine.
+  `TestSearchFiltersAndSort`, `TestAContentSearchFailureDegradesRatherThanFailing`.
+- **Social metadata** (core-scope §4–§6, §8): favorites, tags and comments, each permission-checked and
+  audited, with tag/favorite filters in search. `TestFavoritesToggleAndList`, `TestTagLifecycle`,
+  `TestCommentThreadLifecycle`.
+- **Notifications and antivirus** (competitiveness M4/M5): an in-app inbox plus queued `mail.send`
+  jobs, and an optional ClamAV scan that quarantines a detection to the owner's trash, notifies and
+  audits rather than deleting silently. `TestNotificationInboxIsPerCaller`,
+  `TestAVScanQuarantinesNotifiesAndAuditsInOnePass`.
+- **Sharing posture**: runtime `share_max_expiry_seconds`, `share_default_expiry_seconds` and
+  `share_require_password` applied at creation and update. `TestSharePolicyCapsAndDefaultsExpiry`,
+  `TestSharePolicyRequiresAPasswordOnReadShares`.
+- **Sync token**: every collection's ETag changes when a descendant changes, in the same transaction
+  as the mutation, so a PROPFIND walk can prune an unchanged subtree (the `REPORT` protocol is still
+  absent). `TestDirectoryETagChangesWhenADeepChildChanges`.
+- **Deployment**: environment-only configuration and a one-directory Compose stack; no runtime contract
+  changed, so the existing tests remain the gate.
+
+Group spaces (`POST /api/spaces`) also landed after round 48; the remaining team-owned half is tracked
+in the gap table below.
+
 ### Round 48: The clients could not connect, and the two tokens that fixed it
 
 The limitations page said honestly that there was no Nextcloud client compatibility mode, and the
@@ -1484,15 +1519,15 @@ today, and the impact column says what that costs.
 | --- | --- | --- |
 | ACL | Implemented — Round 30 | `FolderAccess` on the Access page loads a folder's direct grants by path, revokes one at a time, and creates grants; before it, sharing a folder required curl. Batch operations and a "who can access this file" view are outstanding. |
 | Account approval UI | Implemented — Round 31 | `views/Admin.tsx` filters accounts by status and offers only the actions valid for the state; the navigation item is appended for administrators only, and the server returns 404 to others (`TestAdminEndpointsAreInvisibleToNonAdmins`). |
-| §11.1 Metrics | Implemented — Rounds 32 and 33 | `/metrics` is scraped over HTTP by the tests, and the three families production code never wrote (`ObserveUpload`, `ObserveThumbnail`, `ObserveBlobGC`) are wired, guarded by `TestEveryMetricFamilyIsFedByProductionCode`. `deploy/monitoring/` ships a scrape configuration, 18 alert rules that pass `promtool check rules`, and the runbook chapters. Thresholds are starting values. |
+| §11.1 Metrics | Implemented — Rounds 32 and 33 | `/metrics` is scraped over HTTP by the tests, and the three families production code never wrote (`ObserveUpload`, `ObserveThumbnail`, `ObserveBlobGC`) are wired, guarded by `TestEveryMetricFamilyIsFedByProductionCode`. `deploy/monitoring/` ships a scrape configuration, 23 alert rules that pass `promtool check rules`, and the runbook chapters. Thresholds are starting values. |
 | INV-08 restic | Implemented — Round 29 | `blob-backup.sh` ran end to end (backup, forget, prune, `check --read-data-subset=1/20`) and reported `no errors were found`; a Windows panic in `--one-file-system` and a restore command that produced the wrong layout were fixed. |
 | PITR | Implemented — Round 41 | Base backup, deliberate deletion, and recovery to a target time on an `archive_mode=on` instance; the log reads `recovery stopping before commit` and the deleted row returns with the instance promoted. `archive_timeout=5min` was added, which is what makes a 15-minute RPO true on an idle system. |
 | restic snapshot restore | Implemented — Rounds 29 and 40 | A snapshot restored into a scratch directory and copied into place yielded 8 of 8 blobs whose SHA-256 matches their file name, in the layout `ab/cd/<hash>` rather than a doubled `blobs/blobs`. |
 | Large-database timing | Implemented — Round 37 | Three scale points (130 KiB, 1.2 MiB, 5.5 MiB) hold seconds per MiB between 6.94 and 9.38 across a 43-fold range, checked by `TestDrillScaleMeasurementsAreConsistent`. The range stops seven orders of magnitude below 40 TiB, so it supports no 40 TiB RTO figure. |
-| Shared and group-owned spaces | Not implemented | Grants attach to a node with one owner, so a space that outlives an account is not expressible; group grants cover access, not ownership. |
+| Shared and group-owned spaces | Group spaces implemented — creator-bound; team-owned not (SHARE-11) | `POST /api/spaces` creates a space and `GET /api/spaces` lists the caller's; members open it by id through `/api/nodes/{id}` (`TestGroupSpacesAreCreatedDiscoveredAndUsed`). The root lives under the creating account because `nodes_root_uniq` allows one root per owner, so deleting that account deletes the space; a group-owned root with its own quota and lifecycle, and a web UI for spaces, remain absent. |
 | Shared locks | Not implemented | Locks are exclusive, one principal per lock; the RFC 4918 shared lock scope is absent. |
 | Nextcloud desktop and mobile clients | Implemented — Round 48, as a protocol subset | `status.php`, the OCS capabilities and user endpoints, login flow v2, and the `/remote.php/dav/files/<user>/` plus `/remote.php/webdav/` path shapes let the official clients sign in and sync; `X-OC-Mtime` is stored. The subset is the point: chunked uploads (v1/v2) and `REPORT` are not implemented and are refused in the capabilities document, so clients fall back to single-request uploads (bounded by `limits.max_file_bytes`) and full PROPFIND walks. An actual Nextcloud build has not been run against this tree here, so client-version behaviour is inferred from the protocol and remains on the T-18 list. |
-| REPORT and sync-collection | Not implemented | `REPORT` is absent, so a client wanting incremental DAV synchronization walks the tree with `PROPFIND`. |
+| REPORT and sync-collection | Not implemented | `REPORT` is absent, so a client wanting incremental DAV synchronization walks the tree with `PROPFIND`. Collection ETags change on every descendant mutation, so that walk can at least prune unchanged subtrees. |
 | Real S3 interoperability (AWS, MinIO, R2) | Not tested | The fake and moto verify backend logic and minio-go's framing; signatures, redirects, and consistency semantics need a real endpoint, which `TEST_S3_ENDPOINT` provides and which has not been run for AWS, MinIO, or R2. |
 | Immediate deprovisioning on IdP events | Bounded, not immediate — WC-GAP-001 | `auth.revalidate_minutes` refuses a session or App Password whose last IdP confirmation is older than the window, so a demotion applies within a documented bound rather than "whenever this person next signs in". `0` disables it and startup warns. A real event source (SCIM or a poll) would revoke at the moment of the change; this does not. |
 | Process-level isolation for previews | Implemented — WC-GAP-004 | `limits.thumbnail_isolation` defaults to `process`: the decode runs in a re-executed child, the deadline kills it, input and output are size-capped, and the child gets a minimal environment. `TestAHangingDecodeIsKilledAndTheCallReturns` proves the child is gone. A real OS sandbox (seccomp, cgroup) is still absent. |
@@ -1524,7 +1559,7 @@ today, and the impact column says what that costs.
 | Audit slowdown | Not covered | The policy covers an unavailable audit store, not a slow one; no timeout turns a slow write into a refusal. |
 | Real concurrency and kill -9 testing | Not tested | Crash and backup-window behavior is verified by deterministic construction, not by racing a real backup against writes, and there is no concurrent load test. |
 | Derived resources after revocation | Not tested | Links, locks, and grants are covered; thumbnails and other derived artifacts of a revoked share have no test. |
-| §11.1 Job kinds | Partial | The queue has a consumer and three job kinds; idempotence is each handler's responsibility, and more kinds are pending. |
+| §11.1 Job kinds | Partial | The queue has leases, retries, backoff and six registered kinds (`blob.collect`, `thumbnail.warm`, `user.purge_credentials`, `search.index`, `mail.send`, `av.scan`); idempotence is each handler's responsibility, and the catalog is small. |
 | ID-08 Account recovery | Operational procedure | A tombstone cannot be undone; recovery means restoring files from the trash and creating a new account, with no automated path. |
 
 ## 3. Manual verification record

@@ -32,12 +32,12 @@ document was written.
 | [Functional requirements](reference/functional-requirements.md) | The requirements baseline and the gap analysis that drove the build |
 | [Implementation record](reference/implementation-record.md) | Which contracts are implemented, which tests pin them, and what remains open |
 | [ADR-0013 implementation record](reference/adr-0013-implementation-record.md) | Phase 0 regression evidence and Phase 1 consistency-foundation status |
-| [Interface design](reference/interface-design.md) | The Atlas direction: layout, tokens, components, and interaction rules |
-| [Interface redesign: Atrium](reference/interface-atrium.md) | Why the first two directions failed, and the structure that replaced them |
-| [Cirrus 9.1 integration plan](reference/cirrus-9.1-integration-plan.md) | Freeze record, gap matrix, API/database changes, and phased plan for adopting the approved Cirrus 9.1 design |
+| [Interface design](reference/interface-design.md) | Historical Atlas direction (superseded by Atrium, then Cirrus 9.1) |
+| [Interface redesign: Atrium](reference/interface-atrium.md) | Historical Atrium direction (superseded by the Cirrus 9.1 client) |
+| [Cirrus 9.1 integration plan](reference/cirrus-9.1-integration-plan.md) | The dated pre-implementation audit: freeze record, gap matrix, API/database changes, phased plan; see its status update for what shipped |
 | [Cirrus 9.1 UI implementation record](reference/cirrus-9.1-ui-implementation.md) | What the client now implements on Serein UI: the shell, routing, surfaces, the differences the server contract forced, and the evidence |
 | [Browser-only failures](reference/browser-only-failures.md) | Two defects that only appeared in a real browser, and the guards added afterward |
-| [Full review and competitive assessment, 2026-10-24](reference/review-2026-10-24.md) | An independent review of the current tree: verified state, defect register, and how the product compares with Nextcloud, ownCloud/OpenCloud, Seafile, SFTPGo and the single-binary field |
+| [Full review and competitive assessment, 2026-10-24](reference/review-2026-10-24.md) | A dated independent review of the tree at that commit: verified state, defect register, and how the product compares with Nextcloud, ownCloud/OpenCloud, Seafile, SFTPGo and the single-binary field |
 
 ## Decision records
 
@@ -54,9 +54,10 @@ the old one stays in the repository with its original date.
 | [0008](adr/0008-resumable-uploads.md) | Resumable chunked uploads without tus or S3 multipart | Accepted, wire protocol superseded by ADR-0016 |
 | [0012](adr/0012-cursor-contract.md) | Cursor pagination for directory listings | Accepted |
 | [0013](adr/0013-file-operation-consistency.md) | Operation-private staging, conditional publish, and the file-operation correctness contract | Accepted (v2.1.1) |
+| [0014](adr/0014-external-mounts.md) | WebDAV, FTP and SFTP remotes mounted as top-level folders | Accepted |
 | [0015](adr/0015-nextcloud-client-compatibility.md) | Nextcloud client compatibility as a protocol subset, and the login-flow credential handshake | Accepted |
-| [0016](adr/0016-tus-upload-protocol.md) | tus 1.0.0 as the resumable upload protocol; ADR-0008's durability machinery kept | Proposed |
-| [0017](adr/0017-search-engine-posture.md) | Optional content-search engine; the index is a cache and never authorises | Proposed |
+| [0016](adr/0016-tus-upload-protocol.md) | tus 1.0.0 as the resumable upload protocol; ADR-0008's durability machinery kept | Accepted (implemented 2026-10-25) |
+| [0017](adr/0017-search-engine-posture.md) | Optional content-search engine; the index is a cache and never authorises | Accepted (implemented 2026-10-25) |
 
 ## Conventions
 

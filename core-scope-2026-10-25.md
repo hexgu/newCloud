@@ -100,7 +100,7 @@ filename, MIME hint. Values are base64 per spec; the existing name validator run
 
 ### ADR action
 
-File **ADR-0015 (Proposed → Accepted at merge)**: "Resumable uploads move to tus", superseding
+File **ADR-0016 (Proposed → Accepted at merge)**: "Resumable uploads move to tus", superseding
 ADR-0008 §"Why neither tus nor S3 multipart". ADR-0008's argument was client cost ("40 lines of
 slicing loop") — valid then, reversed now by three facts: the durability machinery is
 protocol-independent (proven by restart tests), the ecosystem argument flipped (tus-js-client,
@@ -328,7 +328,8 @@ Wave 3 (protocol + engine — ADR reversals land here)
 ```
 
 Standing rule, unchanged: every wave keeps `go test ./...`, both conformance backends, the
-doc-claim tests, and `newcloud drill` green. New ADRs: ADR-0015 (tus, §1) and ADR-0016 (search
-engine posture: optional ES, best-effort indexing, query-time authorization) are filed as
+doc-claim tests, and `newcloud drill` green. New ADRs: ADR-0016 (tus, §1) and ADR-0017 (search
+engine posture: optional ES, best-effort indexing, query-time authorization) were filed as
 Proposed with the first wave-3 commits; §8's audit policy is appended to ADR-0010's audit
-vocabulary documentation.
+vocabulary documentation. (The numbers moved from 0015/0016 when ADR-0015 was taken by Nextcloud
+client compatibility between the spec and the filing; the ADRs record the renumbering.)

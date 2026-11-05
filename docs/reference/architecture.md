@@ -22,18 +22,24 @@ coordination service.
 
 | Package | Responsibility |
 | --- | --- |
-| `cmd/newcloud` | Process entry point, subcommands (`serve`, `migrate`, `healthcheck`, `audit verify`, `breakglass hash`, `drill`), startup self-checks |
+| `cmd/newcloud` | Process entry point, subcommands (`serve`, `migrate`, `healthcheck`, `audit verify/prune/anchor-keygen/verify-anchors`, `breakglass hash`, `export`, `drill`), startup self-checks |
 | `internal/config` | YAML configuration, environment overlay, validation of unsafe combinations |
 | `internal/auth` | OIDC discovery and callback, session cookies, App Password verification, break-glass login |
 | `internal/authz` | `Actor` and `Cap`: the only way a handler asks "may this actor do this?" |
-| `internal/store` | Metadata: nodes, versions, quota, trash, shares, locks, ACLs, jobs, audit, sessions, users |
+| `internal/store` | Metadata: nodes, versions, quota, trash, shares, locks, ACLs, jobs, audit, sessions, users, spaces, social metadata, notifications |
 | `internal/storage` | Content-store interface, `blob` and `tree` layouts, shared contract tests |
 | `internal/blob` | Local and S3 content-addressed stores, hashing, multipart handling |
 | `internal/dav` | WebDAV method handlers, path parsing, lock enforcement, conditional requests |
-| `internal/server` | HTTP routing, JSON API, share pages, previews, content origin, metrics middleware |
+| `internal/server` | HTTP routing, JSON API, share pages, previews, content origin, mounts, notifications, metrics middleware |
+| `internal/nccompat` | Nextcloud compatibility layer: `status.php`, OCS capabilities/user, login flow v2 |
 | `internal/share` | Share creation, password and one-time-code flows, download accounting |
+| `internal/mount` + `internal/external` | External mounts service and the WebDAV/FTP/SFTP providers (ADR-0014) |
+| `internal/search` | Optional Elasticsearch index; name-and-filter search lives in the store (ADR-0017) |
+| `internal/av` / `internal/mail` / `internal/ticket` | ClamAV client, SMTP transport, short-lived content-share capability tickets |
+| `internal/swap` / `internal/dircommit` / `internal/consistency` | Staged swap primitives, directory commit ordering, ADR-0013 journal and recovery |
+| `internal/fence` / `internal/lease` / `internal/upload` | Hierarchical writer fence, runtime lease and Tree OS lock, resumable upload sessions |
 | `internal/audit` | Hash-chained event log, append, verify, export |
-| `internal/worker` | Retention sweeps, orphan GC, resumable-upload cleanup, blob scrub, job consumer |
+| `internal/worker` | Retention sweeps, orphan GC, resumable-upload cleanup, blob scrub, WAL sampling, operation recovery, notification passes, job consumer |
 | `internal/metrics` | Prometheus registry and instrumented call sites |
 | `internal/webassets` | The built web client, embedded into the binary |
 
@@ -65,10 +71,12 @@ The metadata schema is additive across migrations:
 
 | Group | Tables |
 | --- | --- |
-| Identity | `users`, `groups`, `group_members`, `group_role_map`, `sessions`, `app_passwords`, `scim_pending_changes` |
+| Identity | `users`, `groups`, `group_members`, `group_role_map`, `sessions`, `app_passwords`, `scim_pending_changes`, `login_flows` |
 | Tree | `nodes`, `versions`, `blobs`, `acl_entries`, `name_conflict_renames`, `dead_props` |
-| Lifecycle | `shares`, `share_recipients`, `share_otp_attempts`, `download_sessions`, `lock_tokens`, `jobs`, `settings` |
-| Audit | `audit.events`, `audit.anchors` |
+| Lifecycle | `shares`, `share_recipients`, `share_otp_attempts`, `share_password_attempts`, `share_upload_events`, `download_sessions`, `lock_tokens`, `jobs`, `settings`, `mounts` |
+| Consistency | `operations`, `content_refs`, `consistency_lease` |
+| Social | `favorites`, `tags`, `node_tags`, `comments`, `notifications` |
+| Audit | `audit.events`, `audit.anchors`, `audit.prune_marks` |
 
 A **node** is a file or directory in an owner's namespace. A file node points at a **blob** (the
 content address) and may have many **versions**. A directory node is a parent, not a container on
@@ -133,12 +141,15 @@ not by convention.
 
 Maintenance runs in the same process, in a loop with leases:
 
-- retention sweeps for trash and old versions
+- retention sweeps for trash, old versions and dead sessions
 - orphan blob collection, driven by metadata rows only
 - expired resumable-upload staging cleanup
 - expired lock cleanup
 - periodic blob integrity scrub (opt-in via `limits.blob_scrub_per_pass`)
-- the job queue consumer, with retries and backoff
+- WAL archive sampling for the archiver alerts
+- operation-journal recovery: resolve a provably finished operation, escalate the rest to `NEEDS_OPERATOR`
+- notification expiry reminders, quota warnings and inbox retention
+- the job queue consumer, with retries and backoff (`blob.collect`, `thumbnail.warm`, `user.purge_credentials`, `search.index`, `mail.send`, `av.scan`)
 
 The worker does not assume it is the only instance. Job claims use `FOR UPDATE SKIP LOCKED` and a
 lease, and every sweep is idempotent. A second replica adds a second sweeper without corrupting

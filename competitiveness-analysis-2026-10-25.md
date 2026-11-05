@@ -11,6 +11,15 @@ recommendation, scores the candidates, and sequences them into a roadmap.
 > optional to preserve the single-binary posture) and adopts **tus** as the chunked-upload
 > protocol (superseding ADR-0008's wire protocol; see core-scope §1). Roadmap §8 absorbs the
 > core-scope waves.
+>
+> **Status update (2026-10-28):** several of the roadmap items below shipped after this analysis.
+> **M2 external mounts** is served (WebDAV/FTP/SFTP, ADR-0014; SMB absent); **M4 notifications +
+> mail** and **M5 ClamAV scanning** are implemented (disabled by default for AV); **M6.1
+> name/filter search** and optional **M6.2 content search** are implemented (ADR-0017); tus,
+> favorites, tags, comments and runtime share policy also landed. Still absent from the ranked
+> list are a sync/delta protocol, team-owned spaces, guest accounts, antivirus on download, and
+> the import/migration path. Read §6–§8 as the pre-implementation ranking, not a current gap list;
+> current gaps are in [limitations.md](docs/guides/limitations.md).
 
 ---
 

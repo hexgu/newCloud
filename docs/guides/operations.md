@@ -59,6 +59,9 @@ Prometheus text format directly.
 | `newcloud_blob_scrub_checked` | gauge | Blobs verified in the last integrity pass |
 | `newcloud_blob_scrub_corrupt` | gauge | Blobs whose bytes do not match their address |
 | `newcloud_blob_scrub_missing` | gauge | Blobs referenced by metadata but absent from storage |
+| `newcloud_content_missing_total` | counter | Requests for a row whose bytes are absent from the content store |
+| `newcloud_search_index_lag_seconds` | gauge | Age of the newest document the search index has accepted |
+| `newcloud_search_index_errors_total` | counter | Failed search-index operations |
 | `newcloud_wal_archived_total` | counter | WAL segments archived successfully |
 | `newcloud_wal_archive_failed_total` | counter | WAL archive attempts that failed |
 | `newcloud_wal_segments_pending` | gauge | WAL segments waiting to be archived |
@@ -68,11 +71,15 @@ Prometheus text format directly.
 | `newcloud_audit_anchor_verify_total{result}` | counter | Anchor verifications by outcome |
 | `newcloud_uptime_seconds` | gauge | Process uptime |
 
+`newcloud_backup_last_success_timestamp_seconds` and `newcloud_backup_last_drill_timestamp_seconds`
+are not application metrics: `deploy/backup/backup-all.sh` writes them through node_exporter's
+textfile collector, which is why a backup nobody ran is still alertable.
+
 The shipped rules in [deploy/monitoring/alerts.yml](../../deploy/monitoring/alerts.yml) cover
 process down, error rate, database degradation, audit stall and verification failure, blob GC
 errors, job backlog and failures, upload failures, DAV conflicts, break-glass use and failed
-attempts, WAL archive failure/backlog/stall, blob corruption, blob loss, and a scrub that has
-stopped running.
+attempts, WAL archive failure/backlog/stall, blob corruption, blob loss, a scrub that has stopped
+running, missing content, search-index lag and errors, and stale/unproven backups.
 
 Thresholds are starting values, not measured conclusions. Revisit them after two weeks of real
 traffic.

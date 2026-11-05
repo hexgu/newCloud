@@ -84,10 +84,11 @@ lands somewhere valid rather than half-restored.
   `search:`, `shared`, `single:`), with an honest per-format renderer: image with zoom and pan,
   video, audio, PDF via the browser's viewer, text and source, CSV/TSV as a real table, and a
   fallback card with a working Download for everything else.
-- **Inspector** — four panes (Info, Versions, Activity, Share) that keep their scroll and tab
-  across selection changes. Restore is disabled with the reason when the storage layout kept no
-  bytes; the Share pane says "URL not recoverable" rather than offering a copy button that
-  would copy nothing.
+- **Inspector** — five panes (Info, Versions, Comments, Activity, Share) that keep their scroll and tab
+  across selection changes. The Info pane carries the star and the tag editor; Comments is the
+  discussion thread added with the core-scope work. Restore is disabled with the reason when the
+  storage layout kept no bytes; the Share pane says "URL not recoverable" rather than offering a
+  copy button that would copy nothing.
 - **Settings** — Trash, Activity, Access and Accounts, each with the server's own vocabulary
   (the audit result, the permission string, the setting's source as `config` or `override`).
 - **Public share page** — outside the application shell and unauthenticated, with a **generic
@@ -192,9 +193,12 @@ expiry and not a remaining-downloads figure it would have to invent.
 
 ## 3. What is not claimed
 
-- **No new server capability.** Every gap listed in §2 remains a gap. The integration plan's
-  Phase 3–4 server work (collections, favourites, folder counts, owner identity, link rotation,
-  per-target audit) is untouched.
+- **No Cirrus-specific server capability.** The integration plan's Phase 3–4 server work that this
+  UI still lacks — collections, an "All files" aggregation, workspace summary, server-side
+  last-opened, folder counts, owner identity on `/api/shared`, link URL recovery/rotation and a
+  per-target audit filter — is untouched. The core-scope server work that *did* land after this
+  record (tus, favorites, tags, comments, search, notifications, antivirus) is available to the
+  client, but it was not part of this integration and does not close those rows.
 - **The public gate is not a security control.** `handleSharePage` still returns `label` and
   `hide_contents` before the password is verified (plan P-01), and the recipient gate's
   attempt-count text was removed rather than backed by a lockout. The interface no longer
@@ -204,12 +208,11 @@ expiry and not a remaining-downloads figure it would have to invent.
   are parsed, with a 30-column and 200-row render cap stated in the caption.
 - **No drag-to-dismiss for the bottom sheet**, and no nested submenus: both are documented
   non-goals of the framework.
-- **`pnpm gen:api:check` is blocked**, not passing. That check regenerates `src/api-types.ts`
-  from `web/openapi.yaml`, and the document in the working tree is being rewritten by another
-  change (an `/api/comments/{id}` path whose `200` response `$ref` does not resolve). The client
-  compiles against the regenerated types, but the check itself cannot pass until that document
-  is valid again. `pnpm check` runs the four checks this change owns; `make webcheck` still runs
-  the generation check explicitly, so CI keeps failing on it as it should.
+- **`pnpm gen:api:check` was blocked when this record was written**, not passing: `web/openapi.yaml`
+  was being rewritten by another change (an `/api/comments/{id}` path whose `200` response `$ref`
+  did not resolve). The document has since been repaired; regenerating `src/api-types.ts` from it
+  matches the committed file (checked 2026-10-28), so the check passes. `pnpm check` runs the four
+  checks this change owns; `make webcheck` runs the generation check explicitly.
 
 ---
 
@@ -309,7 +312,7 @@ sort before files; arrow keys move `aria-activedescendant`; entering a folder ch
 the page title; the breadcrumb returns to the root and is absent at the root; Ctrl-K opens search
 and a real filename is found; a file opens into a URL-addressed viewer whose footer names the
 collection and Escape returns; browser Back leaves the folder; the sharing tab is in the URL;
-the inspector has four panes and fills from a selected row; the account menu opens and the
+the inspector has five panes and fills from a selected row; the account menu opens and the
 appearance sheet changes the root's theme; the palette groups commands and files; a CSV renders
 as a table (rows and columns counted); Versions never offers a restore the storage layout cannot
 perform; every phone control is ≥44px in both axes; every visible control has an accessible
